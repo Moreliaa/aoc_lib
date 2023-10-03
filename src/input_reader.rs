@@ -33,7 +33,7 @@ fn get_input_path(year:&str, day:&str) -> PathBuf {
     path
 }
 
-fn fetch_input_from_site(year:&str, day:&str, _input_path:&PathBuf, cookie:&str) -> String {
+fn fetch_input_from_site(year:&str, day:&str, input_path:&PathBuf, cookie:&str) -> String {
     let url = build_url(year, day);
 
     let jar = std::sync::Arc::new(reqwest::cookie::Jar::default());
@@ -47,7 +47,10 @@ fn fetch_input_from_site(year:&str, day:&str, _input_path:&PathBuf, cookie:&str)
     }
     match response {
         Err(reason) => panic!("{}", reason),
-        Ok(value) => value
+        Ok(value) => {
+            fs::write(input_path, &value).unwrap();
+            value
+        }
     }
 }
 
