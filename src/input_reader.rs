@@ -3,12 +3,14 @@ use std::fs;
 use std::path::PathBuf;
 
 
-/// Fetches a puzzle input from the aoc website.
+/// Fetches a puzzle input from the aoc website and caches the result under the subfolder `./input` in a text file.
+/// Depending on your platform, you may need to create the subfolder manually.
+/// Subsequent calls will use the cached result.
 ///
 /// # Arguments
-/// * `year`
-/// * `day`
-/// * `path_to_cookie` - path to the file containing the session cookie
+/// * `year` - year of the event, i.e. "2023"
+/// * `day` - day of the event, i.e. "24"
+/// * `path_to_cookie` - relative or absolute path to the file containing the session cookie
 pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
     let cookie = read_cookie(&path_to_cookie);
     let input_path = get_input_path(year, day);
