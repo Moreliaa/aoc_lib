@@ -8,7 +8,7 @@ use std::path::PathBuf;
 /// # Arguments
 /// * `year`
 /// * `day`
-/// * `path_to_cookie` - to the file containing the session cookie
+/// * `path_to_cookie` - path to the file containing the session cookie
 pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
     let cookie = read_cookie(&path_to_cookie);
     let input_path = get_input_path(year, day);
