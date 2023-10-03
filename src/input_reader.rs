@@ -2,6 +2,13 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+
+/// Fetches a puzzle input from the aoc website.
+///
+/// # Arguments
+/// * `year`
+/// * `day`
+/// * `path_to_cookie` - to the file containing the session cookie
 pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
     let cookie = read_cookie(&path_to_cookie);
     let input_path = get_input_path(year, day);
@@ -12,7 +19,7 @@ pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
 }
 
 fn read_cookie(path_to_cookie:&str) -> String {
-    return fs::read_to_string(path_to_cookie).expect("Failed to read cookie.txt");
+    return fs::read_to_string(path_to_cookie).expect("Failed to read session cookie.");
 }
 
 fn get_input_path(year:&str, day:&str) -> PathBuf {
