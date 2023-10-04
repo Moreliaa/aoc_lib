@@ -20,6 +20,13 @@ pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
     };
 }
 
+/// Split an input by any blank line
+/// # Arguments
+/// * `input` - the input string
+pub fn split_input_blank_line(input:&'_ String) -> std::str::Split<'_, &str> {
+    return input.split("\r\n\r\n");
+}
+
 fn read_cookie(path_to_cookie:&str) -> String {
     return fs::read_to_string(path_to_cookie).expect("Failed to read session cookie.");
 }
@@ -63,4 +70,17 @@ fn build_url(year:&str, day:&str) -> reqwest::Url {
     url_as_str.push_str(day);
     url_as_str.push_str("/input");
     return url_as_str.parse().unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_input_blank_line() {
+        let test1 = String::from("test\r\n\r\ntest");
+        assert_eq!(split_input_blank_line(&test1).count(), 2);
+        let test2 = String::from("test\r\ntest");
+        assert_eq!(split_input_blank_line(&test2).count(), 1);
+    }
 }
