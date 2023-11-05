@@ -20,7 +20,8 @@ pub fn get_input(year:&str, day:&str, path_to_cookie:&str) -> String {
     };
 }
 
-/// Split an input by any blank line
+/// Split an input by any blank line.
+/// 
 /// # Arguments
 /// * `input` - the input string
 pub fn split_input_blank_line(input:&'_ String) -> std::str::Split<'_, &str> {
