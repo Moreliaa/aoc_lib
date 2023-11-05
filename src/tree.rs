@@ -3,14 +3,20 @@ use std::rc::Rc;
 use std::rc::Weak;
 use tree_node::TreeNode;
 
+/// A reference counting pointer to a single node in a tree.
 type Node<T> = Rc<TreeNode<T>>;
 
+/// Represents a tree data structure.
 pub struct Tree<T> {
     root: Node<T>,
-    node_count: i32
+    node_count: usize
 }
 
 impl<T> Tree<T> {
+    /// Create a new tree.
+    /// 
+    /// # Arguments
+    /// * `val` - value of the root node
     pub fn new(val: T) -> Tree<T> {
         Tree {
             root: Tree::create_node(val),
@@ -18,18 +24,24 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Get a reference counting pointer to the root node of the tree.
     pub fn get_root(&self) -> Node<T> {
         Rc::clone(&self.root)
     }
 
-    pub fn get_node_count(&self) -> i32 {
+    /// Get the number of nodes in the tree.
+    pub fn get_node_count(&self) -> usize {
         self.node_count
     }
 
-    pub fn create_node(val: T) -> Node<T> {
-        Rc::new(TreeNode::new(val))
-    }
-
+    /// Adds a new node to the tree.
+    /// 
+    /// # Arguments
+    /// * `parent` - reference to the parent node
+    /// * `val` - value of the child node
+    /// 
+    /// # Returns
+    /// A reference counting pointer to the created child node.
     pub fn add_child(&mut self, parent: &Node<T>, val: T) -> Node<T> {
         let child = Tree::create_node(val);
         child.set_parent(parent);
@@ -38,14 +50,18 @@ impl<T> Tree<T> {
         child
     }
 
-    pub fn aggregate_root<F>(&self, f: F) -> i32 
-    where F: FnOnce(Node<T>) -> i32 + Copy
-    {
-        self.aggregate(&self.get_root(), f)
-    }
-
+    /// Aggregates values in the tree into a single value.
+    /// 
+    /// # Arguments
+    /// 
+    /// `start_node` - a reference to the node the aggregation should start from
+    /// `f` - a closure returning the value that should be aggregated
+    /// 
+    /// # Returns
+    /// The aggregated value.
     pub fn aggregate<F>(&self, start_node: &Node<T>, f: F) -> i32 
-    where F: FnOnce(Node<T>) -> i32 + Copy
+    where
+        F: FnOnce(Node<T>) -> i32 + Copy
     {
         let mut stack = vec![Rc::clone(&start_node)];
         let mut value = 0;
@@ -60,6 +76,24 @@ impl<T> Tree<T> {
             value += f(current_node);
         }
         value
+    }
+
+    /// Aggregates values in the tree into a single value, starting from the root node.
+    /// 
+    /// # Arguments
+    /// 
+    /// `f` - a closure returning the value that should be aggregated
+    /// 
+    /// # Returns
+    /// The aggregated value.
+    pub fn aggregate_root<F>(&self, f: F) -> i32 
+    where F: FnOnce(Node<T>) -> i32 + Copy
+    {
+        self.aggregate(&self.get_root(), f)
+    }
+
+    fn create_node(val: T) -> Node<T> {
+        Rc::new(TreeNode::new(val))
     }
 }
 
@@ -151,6 +185,7 @@ mod tests {
         tree.add_child(&root, 8);
         let child = tree.add_child(&root, 12);
         tree.add_child(&child, 20);
+        assert_eq!(4, tree.get_node_count());
         assert_eq!(45, tree.aggregate_root(|node| node.val));
         assert_eq!(32, tree.aggregate(&child, |node| node.val));
     }
