@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::rc::Weak;
 use tree_node::TreeNode;
+use std::ops::Add;
 
 /// A reference counting pointer to a single node in a tree.
 type Node<T> = Rc<TreeNode<T>>;
@@ -55,16 +56,17 @@ impl<T> Tree<T> {
     /// # Arguments
     /// 
     /// `start_node` - a reference to the node the aggregation should start from
-    /// `f` - a closure returning the value that should be aggregated
+    /// `f` - a closure returning the value that should be aggregated.
     /// 
     /// # Returns
     /// The aggregated value.
-    pub fn aggregate<F>(&self, start_node: &Node<T>, f: F) -> i32 
+    pub fn aggregate<F, R>(&self, start_node: &Node<T>, f: F) -> R 
     where
-        F: FnOnce(Node<T>) -> i32 + Copy
+        R: Add<Output = R>,
+        F: FnOnce(Node<T>) -> R + Copy
     {
         let mut stack = vec![Rc::clone(&start_node)];
-        let mut value = 0;
+        let mut value: Option<R> = None;
 
         while stack.len() > 0 {
             let current_node = stack.pop().unwrap();
@@ -73,9 +75,12 @@ impl<T> Tree<T> {
                     stack.push(Rc::clone(&child));
                 }
             }
-            value += f(current_node);
+            match value {
+                Some(val) => value = Some(val + f(current_node)),
+                None => value = Some(f(current_node))
+            }
         }
-        value
+        value.unwrap()
     }
 
     /// Aggregates values in the tree into a single value, starting from the root node.
