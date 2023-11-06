@@ -91,8 +91,10 @@ impl<T> Tree<T> {
     /// 
     /// # Returns
     /// The aggregated value.
-    pub fn aggregate_root<F>(&self, f: F) -> i32 
-    where F: FnOnce(Node<T>) -> i32 + Copy
+    pub fn aggregate_root<F, R>(&self, f: F) -> R 
+    where
+        R: Add<Output = R>,
+        F: FnOnce(Node<T>) -> R + Copy
     {
         self.aggregate(&self.get_root(), f)
     }
