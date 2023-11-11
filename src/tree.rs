@@ -132,7 +132,7 @@ mod tree_node {
         }
 
         pub fn has_children(&self) -> bool {
-            return self.get_children().len() > 0;
+            self.get_children().len() > 0
         }
 
         pub fn get_children(&self) -> Vec<Node<T>> {
