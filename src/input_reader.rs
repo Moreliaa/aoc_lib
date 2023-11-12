@@ -1,10 +1,11 @@
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
+
+const SUBFOLDER:&str = "input";
 
 
 /// Fetches a puzzle input from the aoc website and caches the result under the subfolder `./input` in a text file.
-/// Depending on your platform, you may need to create the subfolder manually.
 /// Subsequent calls will use the cached result.
 ///
 /// # Arguments
@@ -34,7 +35,7 @@ fn read_cookie(path_to_cookie:&str) -> String {
 
 fn get_input_path(year:&str, day:&str) -> PathBuf {
     let mut path = env::current_dir().expect("Couldn't read current dir."); 
-    path.push("input");
+    path.push(SUBFOLDER);
     let mut yearday = String::from(year);
     yearday.push_str("_");
     yearday.push_str(day);
@@ -58,6 +59,9 @@ fn fetch_input_from_site(year:&str, day:&str, input_path:&PathBuf, cookie:&str) 
     match response {
         Err(reason) => panic!("{}", reason),
         Ok(value) => {
+            if !Path::exists(&Path::new(SUBFOLDER)) {
+                fs::create_dir(SUBFOLDER).unwrap();
+            }
             fs::write(input_path, &value).unwrap();
             value
         }
