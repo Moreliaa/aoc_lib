@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{PathBuf, Path};
 
 const SUBFOLDER:&str = "input";
+const LOGIN_FAILED_RESPONSE:&str = "Puzzle inputs differ by user.  Please log in to get your puzzle input.";
 
 
 /// Fetches a puzzle input from the aoc website and caches the result under the subfolder `./input` in a text file.
@@ -58,6 +59,7 @@ fn fetch_input_from_site(year:&str, day:&str, input_path:&PathBuf, cookie:&str) 
     }
     match response {
         Err(reason) => panic!("{}", reason),
+        Ok(value) if value == LOGIN_FAILED_RESPONSE => panic!("Failed to fetch puzzle input. Make sure your session cookie is correct."),
         Ok(value) => {
             if !Path::exists(&Path::new(SUBFOLDER)) {
                 fs::create_dir(SUBFOLDER).unwrap();
