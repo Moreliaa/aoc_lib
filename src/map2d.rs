@@ -1,48 +1,25 @@
-pub struct Map2D {
-    tiles: Vec<char>,
+use std::fmt::Display;
+
+pub struct Map2D<T> {
+    tiles: Vec<T>,
     width: usize,
     height: usize
 }
 
 /// Represents a contiguous set of tiles aligned in a 2D grid.
-impl Map2D {
+impl<T> Map2D<T> {
     /// Create a new map with all tiles initialized with the given value.
     /// 
     /// # Examples
     /// ```
-    /// let map = aoc_lib::map2d::Map2D::new(5, 4, 'A');
-    /// assert_eq!(map.get(4,3), Some('A'));
+    /// let map = aoc_lib::map2d::Map2D::<char>::new(5, 4, 'A');
+    /// assert_eq!(map.get(4,3), Some(&'A'));
     /// ```
-    pub fn new(width: usize, height: usize, initial_value: char) -> Map2D {
+    pub fn new(width: usize, height: usize, initial_value: T) -> Map2D<T> 
+    where T: Clone
+    {
         Map2D {
             tiles: vec![initial_value; width * height],
-            width,
-            height
-        }
-    }
-
-    /// Create a new map out of an input string. If the input string contains any empty lines, the remainder of the input will be ignored.
-    /// 
-    /// # Panics
-    /// 
-    /// Will panic if any line in the string has a different length than the first one.
-    /// 
-    /// # Examples
-    /// ```
-    /// let input = String::from("12345\n12345");
-    /// let map = aoc_lib::map2d::Map2D::from_string(input);
-    /// ```
-    pub fn from_string(input: String) -> Map2D {
-        let split: Vec<&str> = input.split("\n").take_while(|line| !line.is_empty()).collect();
-        let width = split[0].len();
-        for (idx, line) in split.iter().enumerate() {
-            if line.len() != width {
-                panic!("Invalid length on line {idx}. Expected {width}. Found {}. Full line: {line}", line.len());
-            }
-        }
-        let height = split.len();
-        Map2D {
-            tiles: split.join("").chars().collect(),
             width,
             height
         }
@@ -54,14 +31,14 @@ impl Map2D {
     /// ```
     /// let input = String::from("12345\n67890");
     /// let map = aoc_lib::map2d::Map2D::from_string(input);
-    /// assert_eq!(Some('1'), map.get(0,0));
-    /// assert_eq!(Some('7'), map.get(1,1));
+    /// assert_eq!(Some(&'1'), map.get(0,0));
+    /// assert_eq!(Some(&'7'), map.get(1,1));
     /// assert_eq!(None, map.get(0,2));
     /// ```
-    pub fn get(&self, x: usize, y: usize) -> Option<char> {
+    pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         let idx = self.get_index(x, y);
         match self.is_in_bounds(x, y) {
-            true => Some(self.tiles[idx]),
+            true => Some(&self.tiles[idx]),
             false => None
         }
     }
@@ -73,9 +50,9 @@ impl Map2D {
     /// let input = String::from("12345\n67890");
     /// let mut map = aoc_lib::map2d::Map2D::from_string(input);
     /// map.set(4, 1, 'A');
-    /// assert_eq!(Some('A'), map.get(4,1));
+    /// assert_eq!(Some(&'A'), map.get(4,1));
     /// ```
-    pub fn set(&mut self, x: usize, y: usize, val: char) {
+    pub fn set(&mut self, x: usize, y: usize, val: T) {
         let idx = self.get_index(x, y);
         self.tiles[idx] = val;
     }
@@ -100,12 +77,43 @@ impl Map2D {
     }
 
     /// Prints the map to the console.
-    pub fn print(&self) {
+    pub fn print(&self) 
+    where T: Display
+    {
         for (idx, chara) in self.tiles.iter().enumerate() {
             if idx % self.width == 0 {
                 println!();
             }
-            print!("{chara}");
+            print!("{}", chara);
+        }
+    }
+}
+
+impl Map2D<char> {
+    /// Create a new map out of an input string. If the input string contains any empty lines, the remainder of the input will be ignored.
+    /// 
+    /// # Panics
+    /// 
+    /// Will panic if any line in the string has a different length than the first one.
+    /// 
+    /// # Examples
+    /// ```
+    /// let input = String::from("12345\n12345");
+    /// let map = aoc_lib::map2d::Map2D::from_string(input);
+    /// ```
+    pub fn from_string(input: String) -> Map2D<char> {
+        let split: Vec<&str> = input.split("\n").take_while(|line| !line.is_empty()).collect();
+        let width = split[0].len();
+        for (idx, line) in split.iter().enumerate() {
+            if line.len() != width {
+                panic!("Invalid length on line {idx}. Expected {width}. Found {}. Full line: {line}", line.len());
+            }
+        }
+        let height = split.len();
+        Map2D {
+            tiles: split.join("").chars().collect(),
+            width,
+            height
         }
     }
 }
