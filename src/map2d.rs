@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Add;
 
 pub struct Map2D<T> {
     tiles: Vec<T>,
@@ -86,6 +87,38 @@ impl<T> Map2D<T> {
             }
             print!("{}", chara);
         }
+    }
+
+    /// Aggregates values in the map into a single value.
+    /// 
+    /// # Arguments
+    /// 
+    /// `f` - a closure returning the value that should be aggregated.
+    /// 
+    /// # Returns
+    /// The aggregated value.
+    /// 
+    /// # Examples
+    /// ```
+    /// let map = aoc_lib::map2d::Map2D::<i32>::new(10, 10, 1);
+    /// assert_eq!(map.aggregate(|val| *val), 100);
+    /// 
+    /// let map = aoc_lib::map2d::Map2D::<Vec<i32>>::new(1, 10, vec![1,2]);
+    /// assert_eq!(map.aggregate(|val| val[0] + val[1]), 30);
+    /// ```
+    pub fn aggregate<F, R>(&self, f: F) -> R 
+    where
+        R: Add<Output = R>,
+        F: FnOnce(&T) -> R + Copy
+    {
+        let mut value: Option<R> = None;
+        for tile in &self.tiles {
+            match value {
+                Some(val) => value = Some(val + f(tile)),
+                None => value = Some(f(tile))
+            }
+        }
+        value.unwrap()
     }
 }
 
