@@ -5,7 +5,7 @@ use tree_node::TreeNode;
 use std::ops::Add;
 
 /// A reference counting pointer to a single node in a tree.
-type Node<T> = Rc<TreeNode<T>>;
+type Node<T> = Rc<RefCell<TreeNode<T>>>;
 
 /// Represents a tree data structure.
 pub struct Tree<T> {
@@ -45,8 +45,8 @@ impl<T> Tree<T> {
     /// A reference counting pointer to the created child node.
     pub fn add_child(&mut self, parent: &Node<T>, val: T) -> Node<T> {
         let child = Tree::create_node(val);
-        child.set_parent(parent);
-        parent.add_child(Rc::clone(&child));
+        child.borrow_mut().set_parent(parent);
+        parent.borrow_mut().add_child(Rc::clone(&child));
         self.node_count += 1;
         child
     }
@@ -70,8 +70,8 @@ impl<T> Tree<T> {
 
         while stack.len() > 0 {
             let current_node = stack.pop().unwrap();
-            if current_node.has_children() {
-                for child in current_node.get_children() {
+            if current_node.borrow().has_children() {
+                for child in current_node.borrow().get_children() {
                     stack.push(Rc::clone(&child));
                 }
             }
@@ -100,7 +100,7 @@ impl<T> Tree<T> {
     }
 
     fn create_node(val: T) -> Node<T> {
-        Rc::new(TreeNode::new(val))
+        Rc::new(RefCell::new(TreeNode::new(val)))
     }
 }
 
@@ -110,7 +110,7 @@ mod tree_node {
     #[derive(Debug)]
     pub struct TreeNode<T> {
         pub val: T,
-        parent: RefCell<Weak<TreeNode<T>>>,
+        parent: RefCell<Weak<RefCell<TreeNode<T>>>>,
         children: RefCell<Vec<Node<T>>>
     }
 
@@ -163,11 +163,11 @@ mod tests {
         let root = tree.get_root();
         tree.add_child(&root, 8);
         assert_eq!(2, tree.get_node_count());
-        let child = root.get_children();
+        let child = root.borrow().get_children();
         let child = &child[0];
-        let parent = child.get_parent().unwrap();
-        assert_eq!(5, parent.val);
-        assert_eq!(8, child.val);
+        let parent = child.borrow().get_parent().unwrap();
+        assert_eq!(5, parent.borrow().val);
+        assert_eq!(8, child.borrow().val);
     }
 
     #[test]
@@ -182,7 +182,7 @@ mod tests {
             test_value: 1,
             test_vector: vec![],
         });
-        assert_eq!(1, tree.get_root().val.test_value);
+        assert_eq!(1, tree.get_root().borrow().val.test_value);
     }
 
     #[test]
@@ -193,7 +193,15 @@ mod tests {
         let child = tree.add_child(&root, 12);
         tree.add_child(&child, 20);
         assert_eq!(4, tree.get_node_count());
-        assert_eq!(45, tree.aggregate_root(|node| node.val));
-        assert_eq!(32, tree.aggregate(&child, |node| node.val));
+        assert_eq!(45, tree.aggregate_root(|node| node.borrow().val));
+        assert_eq!(32, tree.aggregate(&child, |node| node.borrow().val));
+    }
+
+    #[test]
+    fn test_mut() {
+        let tree = Tree::new(5);
+        let root = tree.get_root();
+        root.borrow_mut().val = 8;
+        assert_eq!(tree.get_root().borrow().val, 8);
     }
 }

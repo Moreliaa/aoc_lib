@@ -1,13 +1,13 @@
 use std::fmt::Display;
 use std::ops::Add;
 
+/// Represents a contiguous set of tiles aligned in a 2D grid.
 pub struct Map2D<T> {
     tiles: Vec<T>,
     width: usize,
     height: usize
 }
 
-/// Represents a contiguous set of tiles aligned in a 2D grid.
 impl<T> Map2D<T> {
     /// Create a new map with all tiles initialized with the given value.
     /// 
