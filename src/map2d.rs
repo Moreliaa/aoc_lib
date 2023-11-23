@@ -36,10 +36,9 @@ impl<T> Map2D<T> {
     /// assert_eq!(Some(&'7'), map.get(1,1));
     /// assert_eq!(None, map.get(0,2));
     /// ```
-    pub fn get(&self, x: usize, y: usize) -> Option<&T> {
-        let idx = self.get_index(x, y);
-        match self.is_in_bounds(x as i32, y as i32) {
-            true => Some(&self.tiles[idx]),
+    pub fn get(&self, x: i32, y: i32) -> Option<&T> {
+        match self.is_in_bounds(x, y) {
+            true => Some(&self.tiles[self.get_index(x as usize, y as usize)]),
             false => None
         }
     }
@@ -53,8 +52,11 @@ impl<T> Map2D<T> {
     /// map.set(4, 1, 'A');
     /// assert_eq!(Some(&'A'), map.get(4,1));
     /// ```
-    pub fn set(&mut self, x: usize, y: usize, val: T) {
-        let idx = self.get_index(x, y);
+    pub fn set(&mut self, x: i32, y: i32, val: T) {
+        if !self.is_in_bounds(x, y) {
+            return;
+        }
+        let idx = self.get_index(x as usize, y as usize);
         self.tiles[idx] = val;
     }
 
