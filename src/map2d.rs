@@ -120,6 +120,14 @@ impl<T> Map2D<T> {
         }
         value.unwrap()
     }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
 }
 
 impl Map2D<char> {
