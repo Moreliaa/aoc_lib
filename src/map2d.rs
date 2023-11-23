@@ -4,8 +4,8 @@ use std::ops::Add;
 /// Represents a contiguous set of tiles aligned in a 2D grid.
 pub struct Map2D<T> {
     tiles: Vec<T>,
-    width: usize,
-    height: usize
+    width: i32,
+    height: i32
 }
 
 impl<T> Map2D<T> {
@@ -16,11 +16,11 @@ impl<T> Map2D<T> {
     /// let map = aoc_lib::map2d::Map2D::<char>::new(5, 4, 'A');
     /// assert_eq!(map.get(4,3), Some(&'A'));
     /// ```
-    pub fn new(width: usize, height: usize, initial_value: T) -> Map2D<T> 
+    pub fn new(width: i32, height: i32, initial_value: T) -> Map2D<T> 
     where T: Clone
     {
         Map2D {
-            tiles: vec![initial_value; width * height],
+            tiles: vec![initial_value; (width * height) as usize],
             width,
             height
         }
@@ -38,7 +38,7 @@ impl<T> Map2D<T> {
     /// ```
     pub fn get(&self, x: i32, y: i32) -> Option<&T> {
         match self.is_in_bounds(x, y) {
-            true => Some(&self.tiles[self.get_index(x as usize, y as usize)]),
+            true => Some(&self.tiles[self.get_index(x as i32, y as i32)]),
             false => None
         }
     }
@@ -56,12 +56,12 @@ impl<T> Map2D<T> {
         if !self.is_in_bounds(x, y) {
             return;
         }
-        let idx = self.get_index(x as usize, y as usize);
+        let idx = self.get_index(x as i32, y as i32);
         self.tiles[idx] = val;
     }
 
-    fn get_index(&self, x: usize, y: usize) -> usize {
-        x + y * self.width
+    fn get_index(&self, x: i32, y: i32) -> usize {
+        (x + y * self.width) as usize
     }
 
     /// Check if the given coordinates are in bounds.
@@ -76,7 +76,7 @@ impl<T> Map2D<T> {
     /// assert_eq!(map.is_in_bounds(0, 0), true);
     /// ```
     pub fn is_in_bounds(&self, x: i32, y: i32) -> bool {
-        x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height
+        x >= 0 && y >= 0 && (x as i32) < self.width && (y as i32) < self.height
     }
 
     /// Prints the map to the console.
@@ -84,7 +84,7 @@ impl<T> Map2D<T> {
     where T: Display
     {
         for (idx, chara) in self.tiles.iter().enumerate() {
-            if idx % self.width == 0 {
+            if idx % self.width as usize == 0 {
                 println!();
             }
             print!("{}", chara);
@@ -123,11 +123,11 @@ impl<T> Map2D<T> {
         value.unwrap()
     }
 
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> i32 {
         self.width
     }
 
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> i32 {
         self.height
     }
 }
@@ -155,8 +155,8 @@ impl Map2D<char> {
         let height = split.len();
         Map2D {
             tiles: split.join("").chars().collect(),
-            width,
-            height
+            width: width as i32,
+            height: height as i32
         }
     }
 }
