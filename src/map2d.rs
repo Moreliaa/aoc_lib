@@ -73,8 +73,8 @@ impl<T> Map2D<T> {
     /// assert_eq!(map.is_in_bounds(4, 2), true);
     /// assert_eq!(map.is_in_bounds(0, 0), true);
     /// ```
-    pub fn is_in_bounds(&self, x: usize, y: usize) -> bool {
-        x < self.width && y < self.height
+    pub fn is_in_bounds(&self, x: i32, y: i32) -> bool {
+        x > 0 && y > 0 && (x as usize) < self.width && (y as usize) < self.height
     }
 
     /// Prints the map to the console.
