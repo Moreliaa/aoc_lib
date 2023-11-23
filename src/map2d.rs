@@ -38,7 +38,7 @@ impl<T> Map2D<T> {
     /// ```
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         let idx = self.get_index(x, y);
-        match self.is_in_bounds(x, y) {
+        match self.is_in_bounds(x as i32, y as i32) {
             true => Some(&self.tiles[idx]),
             false => None
         }
@@ -74,7 +74,7 @@ impl<T> Map2D<T> {
     /// assert_eq!(map.is_in_bounds(0, 0), true);
     /// ```
     pub fn is_in_bounds(&self, x: i32, y: i32) -> bool {
-        x > 0 && y > 0 && (x as usize) < self.width && (y as usize) < self.height
+        x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height
     }
 
     /// Prints the map to the console.
