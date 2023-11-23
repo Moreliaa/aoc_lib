@@ -123,6 +123,49 @@ impl<T> Map2D<T> {
         value.unwrap()
     }
 
+    /// Aggregates values in the given range into a single value.
+    /// Coordinates out of bounds will be ignored.
+    /// 
+    /// # Arguments
+    /// 
+    /// `x0` - lower bound for the width
+    /// `x1` - inclusive upper bound for the width
+    /// `y0` - lower bound for the height
+    /// `y1` - inclusive upper bound for the height
+    /// `f` - a closure returning the value that should be aggregated.
+    /// 
+    /// # Returns
+    /// The aggregated value.
+    /// 
+    /// # Examples
+    /// ```
+    /// let map = aoc_lib::map2d::Map2D::<i32>::new(10, 10, 1);
+    /// assert_eq!(map.aggregate_range(0,4,0,4, |val| *val), 25);
+    /// 
+    /// let map = aoc_lib::map2d::Map2D::<Vec<i32>>::new(1, 10, vec![1,2]);
+    /// assert_eq!(map.aggregate_range(0,0,0,4, |val| val[0] + val[1]), 15);
+    /// ```
+    pub fn aggregate_range<F, R>(&self, x0: i32, x1: i32, y0: i32, y1: i32, f: F) -> R
+    where
+        R: Add<Output = R>,
+        F: FnOnce(&T) -> R + Copy
+    {
+        let mut value: Option<R> = None;
+        for x in x0..=x1 {
+            for y in y0..=y1 {
+                let tile = match self.get(x,y) {
+                    Some(val) => val,
+                    None => continue
+                };
+                match value {
+                    Some(val) => value = Some(val + f(tile)),
+                    None => value = Some(f(tile))
+                }
+            }
+        }
+        value.unwrap()
+    }
+
     pub fn width(&self) -> i32 {
         self.width
     }
