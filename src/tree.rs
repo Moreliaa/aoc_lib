@@ -88,22 +88,22 @@ impl<T> Tree<T> {
     pub fn aggregate<F, R>(&self, start_id: usize, f: F) -> R
     where
         R: Add<Output = R>,
-        F: FnOnce(&T) -> R + Copy,
+        F: FnOnce(usize, &T) -> R + Copy,
     {
         let mut stack = vec![start_id];
         let mut value: Option<R> = None;
 
         while stack.len() > 0 {
-            let current_node = stack.pop().unwrap();
-            let current_node = self.get_node(current_node);
+            let current_id = stack.pop().unwrap();
+            let current_node = self.get_node(current_id);
             if current_node.has_children() {
                 for child in current_node.get_child_ids() {
                     stack.push(*child);
                 }
             }
             match value {
-                Some(val) => value = Some(val + f(&current_node.val)),
-                None => value = Some(f(&current_node.val)),
+                Some(val) => value = Some(val + f(current_id, &current_node.val)),
+                None => value = Some(f(current_id, &current_node.val)),
             }
         }
         value.unwrap()
@@ -120,7 +120,7 @@ impl<T> Tree<T> {
     pub fn aggregate_root<F, R>(&self, f: F) -> R
     where
         R: Add<Output = R>,
-        F: FnOnce(&T) -> R + Copy,
+        F: FnOnce(usize, &T) -> R + Copy,
     {
         self.aggregate(0, f)
     }
@@ -203,8 +203,8 @@ mod tests {
         let child = tree.add_child(0, 12);
         tree.add_child(child, 20);
         assert_eq!(4, tree.get_node_count());
-        assert_eq!(45, tree.aggregate_root(|node| *node));
-        assert_eq!(32, tree.aggregate(child, |node| *node));
+        assert_eq!(45, tree.aggregate_root(|_, node| *node));
+        assert_eq!(32, tree.aggregate(child, |_, node| *node));
     }
 
     #[test]
