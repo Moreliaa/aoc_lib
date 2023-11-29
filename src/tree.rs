@@ -1,33 +1,58 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::rc::Weak;
-use tree_node::TreeNode;
+use std::collections::HashMap;
 use std::ops::Add;
-
-/// A reference counting pointer to a single node in a tree.
-type Node<T> = Rc<RefCell<TreeNode<T>>>;
+use tree_node::TreeNode;
 
 /// Represents a tree data structure.
 pub struct Tree<T> {
-    root: Node<T>,
-    node_count: usize
+    nodes: HashMap<usize, TreeNode<T>>,
+    node_count: usize,
 }
 
 impl<T> Tree<T> {
     /// Create a new tree.
-    /// 
+    ///
     /// # Arguments
     /// * `val` - value of the root node
     pub fn new(val: T) -> Tree<T> {
-        Tree {
-            root: Tree::create_node(val),
-            node_count: 1
-        }
+        let mut tree = Tree {
+            nodes: HashMap::new(),
+            node_count: 0,
+        };
+
+        tree.create_node(val);
+        tree
     }
 
-    /// Get a reference counting pointer to the root node of the tree.
-    pub fn get_root(&self) -> Node<T> {
-        Rc::clone(&self.root)
+    fn create_node(&mut self, val: T) -> usize {
+        let rc = TreeNode::new(val);
+        self.nodes.insert(self.node_count, rc);
+        self.node_count += 1;
+        self.node_count - 1
+    }
+
+    pub fn get_val(&self, id: usize) -> &T {
+        &self.nodes.get(&id).unwrap().val
+    }
+
+    pub fn get_mut_val(&mut self, id: usize) -> &mut T {
+        &mut self.nodes.get_mut(&id).unwrap().val
+    }
+
+    pub fn get_parent_id(&self, id: usize) -> &Option<usize> {
+        &self.nodes.get(&id).unwrap().get_parent_id()
+    }
+
+    pub fn get_child_ids(&self, id: usize) -> &Vec<usize> {
+        &self.nodes.get(&id).unwrap().get_child_ids()
+    }
+
+    #[allow(dead_code)]
+    fn get_node(&self, id: usize) -> &TreeNode<T> {
+        &self.nodes.get(&id).unwrap()
+    }
+
+    fn get_mut_node(&mut self, id: usize) -> &mut TreeNode<T> {
+        self.nodes.get_mut(&id).unwrap()
     }
 
     /// Get the number of nodes in the tree.
@@ -36,119 +61,115 @@ impl<T> Tree<T> {
     }
 
     /// Adds a new node to the tree.
-    /// 
+    ///
     /// # Arguments
-    /// * `parent` - reference to the parent node
+    /// * `parent_id` - id of the parent node. The id of the root node is always 0.
     /// * `val` - value of the child node
-    /// 
+    ///
     /// # Returns
-    /// A reference counting pointer to the created child node.
-    pub fn add_child(&mut self, parent: &Node<T>, val: T) -> Node<T> {
-        let child = Tree::create_node(val);
-        child.borrow_mut().set_parent(parent);
-        parent.borrow_mut().add_child(Rc::clone(&child));
-        self.node_count += 1;
-        child
+    /// The id of the created child node.
+    pub fn add_child(&mut self, parent_id: usize, val: T) -> usize {
+        let child_id = self.create_node(val);
+        let child = self.get_mut_node(child_id);
+        child.set_parent(parent_id);
+        let parent = self.get_mut_node(parent_id);
+        parent.add_child(child_id);
+        child_id
     }
 
     /// Aggregates values in the tree into a single value.
-    /// 
+    ///
     /// # Arguments
-    /// 
-    /// `start_node` - a reference to the node the aggregation should start from
+    ///
+    /// `start_id` - id of the node the aggregation should start from
     /// `f` - a closure returning the value that should be aggregated.
-    /// 
+    ///
     /// # Returns
     /// The aggregated value.
-    pub fn aggregate<F, R>(&self, start_node: &Node<T>, f: F) -> R 
+    pub fn aggregate<F, R>(&self, start_id: usize, f: F) -> R
     where
         R: Add<Output = R>,
-        F: FnOnce(Node<T>) -> R + Copy
+        F: FnOnce(&TreeNode<T>) -> R + Copy,
     {
-        let mut stack = vec![Rc::clone(&start_node)];
+        let mut stack = vec![start_id];
         let mut value: Option<R> = None;
 
         while stack.len() > 0 {
             let current_node = stack.pop().unwrap();
-            if current_node.borrow().has_children() {
-                for child in current_node.borrow().get_children() {
-                    stack.push(Rc::clone(&child));
+            let current_node = self.nodes.get(&current_node).unwrap();
+            if current_node.has_children() {
+                for child in current_node.get_child_ids() {
+                    stack.push(*child);
                 }
             }
             match value {
-                Some(val) => value = Some(val + f(current_node)),
-                None => value = Some(f(current_node))
+                Some(val) => value = Some(val + f(&current_node)),
+                None => value = Some(f(&current_node)),
             }
         }
         value.unwrap()
     }
 
     /// Aggregates values in the tree into a single value, starting from the root node.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// `f` - a closure returning the value that should be aggregated
-    /// 
+    ///
     /// # Returns
     /// The aggregated value.
-    pub fn aggregate_root<F, R>(&self, f: F) -> R 
+    pub fn aggregate_root<F, R>(&self, f: F) -> R
     where
         R: Add<Output = R>,
-        F: FnOnce(Node<T>) -> R + Copy
+        F: FnOnce(&TreeNode<T>) -> R + Copy,
     {
-        self.aggregate(&self.get_root(), f)
-    }
-
-    fn create_node(val: T) -> Node<T> {
-        Rc::new(RefCell::new(TreeNode::new(val)))
+        self.aggregate(0, f)
     }
 }
 
 mod tree_node {
-    use super::*;
-
     #[derive(Debug)]
     pub struct TreeNode<T> {
         pub val: T,
-        parent: RefCell<Weak<RefCell<TreeNode<T>>>>,
-        children: RefCell<Vec<Node<T>>>
+        parent: Option<usize>,
+        children: Vec<usize>,
     }
 
     impl<T> TreeNode<T> {
         pub fn new(val: T) -> TreeNode<T> {
             TreeNode {
                 val,
-                parent: RefCell::new(Weak::new()),
-                children: RefCell::new(vec![])
+                parent: None,
+                children: vec![],
             }
         }
 
-        pub fn get_parent(&self) -> Option<Node<T>> {
-            self.parent.borrow().upgrade()
+        pub fn get_parent_id(&self) -> &Option<usize> {
+            &self.parent
         }
 
-        pub fn get_mut_parent(&self) -> Option<Node<T>> {
-            self.parent.borrow_mut().upgrade()
+        pub fn get_mut_parent(&mut self) -> &mut Option<usize> {
+            &mut self.parent
         }
 
         pub fn has_children(&self) -> bool {
-            self.get_children().len() > 0
+            self.get_child_ids().len() > 0
         }
 
-        pub fn get_children(&self) -> Vec<Node<T>> {
-            self.children.borrow().to_vec()
+        pub fn get_child_ids(&self) -> &Vec<usize> {
+            &self.children
         }
 
-        pub fn get_mut_children(&self) -> Vec<Node<T>> {
-            self.children.borrow_mut().to_vec()
+        pub fn get_mut_children(&mut self) -> &mut Vec<usize> {
+            &mut self.children
         }
 
-        pub fn set_parent(&self, parent: &Node<T>) {
-            *self.parent.borrow_mut() = Rc::downgrade(&parent);
+        pub fn set_parent(&mut self, parent: usize) {
+            self.parent = Some(parent);
         }
 
-        pub fn add_child(&self, child: Node<T>) {
-            self.children.borrow_mut().push(child);
+        pub fn add_child(&mut self, child: usize) {
+            self.children.push(child);
         }
     }
 }
@@ -160,14 +181,13 @@ mod tests {
     #[test]
     fn test_add_child() {
         let mut tree = Tree::new(5);
-        let root = tree.get_root();
-        tree.add_child(&root, 8);
+        tree.add_child(0, 8);
         assert_eq!(2, tree.get_node_count());
-        let child = root.borrow().get_children();
-        let child = &child[0];
-        let parent = child.borrow().get_parent().unwrap();
-        assert_eq!(5, parent.borrow().val);
-        assert_eq!(8, child.borrow().val);
+        let child = tree.get_child_ids(0);
+        let child = child[0];
+        let parent = tree.get_parent_id(child).unwrap();
+        assert_eq!(5, *tree.get_val(parent));
+        assert_eq!(8, *tree.get_val(child));
     }
 
     #[test]
@@ -175,33 +195,31 @@ mod tests {
         #[allow(dead_code)]
         struct TestStruct {
             test_value: i32,
-            test_vector: Vec<String>
+            test_vector: Vec<String>,
         }
 
         let tree = Tree::new(TestStruct {
             test_value: 1,
             test_vector: vec![],
         });
-        assert_eq!(1, tree.get_root().borrow().val.test_value);
+        assert_eq!(1, tree.get_val(0).test_value);
     }
 
     #[test]
     fn test_aggregate() {
         let mut tree = Tree::new(5);
-        let root = tree.get_root();
-        tree.add_child(&root, 8);
-        let child = tree.add_child(&root, 12);
-        tree.add_child(&child, 20);
+        tree.add_child(0, 8);
+        let child = tree.add_child(0, 12);
+        tree.add_child(child, 20);
         assert_eq!(4, tree.get_node_count());
-        assert_eq!(45, tree.aggregate_root(|node| node.borrow().val));
-        assert_eq!(32, tree.aggregate(&child, |node| node.borrow().val));
+        assert_eq!(45, tree.aggregate_root(|node| node.val));
+        assert_eq!(32, tree.aggregate(child, |node| node.val));
     }
 
     #[test]
     fn test_mut() {
-        let tree = Tree::new(5);
-        let root = tree.get_root();
-        root.borrow_mut().val = 8;
-        assert_eq!(tree.get_root().borrow().val, 8);
+        let mut tree = Tree::new(5);
+        *tree.get_mut_val(0) = 8;
+        assert_eq!(*tree.get_val(0), 8);
     }
 }
