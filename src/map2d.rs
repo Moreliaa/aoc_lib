@@ -103,24 +103,17 @@ impl<T> Map2D<T> {
     /// # Examples
     /// ```
     /// let map = aoc_lib::map2d::Map2D::<i32>::new(10, 10, 1);
-    /// assert_eq!(map.aggregate(|val| *val), 100);
+    /// assert_eq!(map.aggregate(|val, x, y| *val), 100);
     /// 
     /// let map = aoc_lib::map2d::Map2D::<Vec<i32>>::new(1, 10, vec![1,2]);
-    /// assert_eq!(map.aggregate(|val| val[0] + val[1]), 30);
+    /// assert_eq!(map.aggregate(|val, x, y| val[0] + val[1]), 30);
     /// ```
     pub fn aggregate<F, R>(&self, f: F) -> R 
     where
         R: Add<Output = R>,
-        F: FnOnce(&T) -> R + Copy
+        F: FnOnce(&T, i32, i32) -> R + Copy
     {
-        let mut value: Option<R> = None;
-        for tile in &self.tiles {
-            match value {
-                Some(val) => value = Some(val + f(tile)),
-                None => value = Some(f(tile))
-            }
-        }
-        value.unwrap()
+        self.aggregate_range(0, self.width, 0, self.height, f)
     }
 
     /// Aggregates values in the given range into a single value.
@@ -140,15 +133,16 @@ impl<T> Map2D<T> {
     /// # Examples
     /// ```
     /// let map = aoc_lib::map2d::Map2D::<i32>::new(10, 10, 1);
-    /// assert_eq!(map.aggregate_range(0,4,0,4, |val| *val), 25);
+    /// assert_eq!(map.aggregate_range(0,4,0,4, |val,x,y| *val), 25);
+    /// assert_eq!(map.aggregate_range(0,4,0,4, |val,x,y| if x == 0 && y == 0 {-7} else {*val}), 17);
     /// 
     /// let map = aoc_lib::map2d::Map2D::<Vec<i32>>::new(1, 10, vec![1,2]);
-    /// assert_eq!(map.aggregate_range(0,0,0,4, |val| val[0] + val[1]), 15);
+    /// assert_eq!(map.aggregate_range(0,0,0,4, |val,x,y| val[0] + val[1]), 15);
     /// ```
     pub fn aggregate_range<F, R>(&self, x0: i32, x1: i32, y0: i32, y1: i32, f: F) -> R
     where
         R: Add<Output = R>,
-        F: FnOnce(&T) -> R + Copy
+        F: FnOnce(&T, i32, i32) -> R + Copy
     {
         let mut value: Option<R> = None;
         for x in x0..=x1 {
@@ -158,8 +152,8 @@ impl<T> Map2D<T> {
                     None => continue
                 };
                 match value {
-                    Some(val) => value = Some(val + f(tile)),
-                    None => value = Some(f(tile))
+                    Some(val) => value = Some(val + f(tile, x, y)),
+                    None => value = Some(f(tile, x, y))
                 }
             }
         }
